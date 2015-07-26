@@ -1,6 +1,11 @@
 (ns gnostica.core)
 
-(def unit-vectors
+; game structure example
+{:board {
+         {:x 0 :y 0} {:minions {:id 0 :direction :up}}
+         {:x 0 :y 1} {:minions {:id 1 :direction :east}}}}
+
+(def direction-vectors
   {:north {:x 0 :y 1}
    :east {:x 1 :y 0}
    :west {:x -1 :y 0}
@@ -11,15 +16,23 @@
   (let [coords (for [x (range size)
                      y (range size)]
                  {:x x :y y})]
-    (zipmap coords (repeat {}))))
+    (zipmap coords (repeat {:minions {}}))))
 
-(defn calculate-target-loc [loc minion]
-  (let [{minion-orientation :orientation} minion
-        minion-vector (unit-vectors minion-orientation)
+(defn- calculate-target-loc [loc minion]
+  (let [{minion-direction :direction} minion
+        minion-vector (direction-vectors minion-direction)
         target-loc {:x (+ (loc :x) (minion-vector :x)) :y (+ (loc :y) (minion-vector :y))}]
     target-loc))
 
 (defn create-game [board-size]
   {:board (create-board board-size)})
+
+(defn move [game from target-id]
+  (let [minion (get-in game [:board from :minions target-id])
+        to (calculate-target-loc from minion)
+        copy-to-new-loc (assoc-in game [:board to :minions (minion :id)] minion)
+        remove-from-old-loc (update-in copy-to-new-loc [:board from :minions] dissoc (minion :id))]
+    remove-from-old-loc))
+
 
 
