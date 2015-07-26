@@ -1,4 +1,5 @@
-(ns gnostica.core)
+(ns gnostica.core
+  (:import (clojure.lang ExceptionInfo)))
 
 ; game structure example
 {:board {
@@ -28,11 +29,13 @@
   {:board (create-board board-size)})
 
 (defn move [game from target-id]
-  (let [minion (get-in game [:board from :minions target-id])
-        to (calculate-target-loc from minion)
-        copy-to-new-loc (assoc-in game [:board to :minions (minion :id)] minion)
-        remove-from-old-loc (update-in copy-to-new-loc [:board from :minions] dissoc (minion :id))]
-    remove-from-old-loc))
+  (let [minion (get-in game [:board from :minions target-id])]
+    (if (= (minion :direction) :up)
+      (throw (ex-info "movement when minion is facing up is illegal" {:from from :target target-id}))
+      (let [to (calculate-target-loc from minion)
+            copy-to-new-loc (assoc-in game [:board to :minions (minion :id)] minion)
+            remove-from-old-loc (update-in copy-to-new-loc [:board from :minions] dissoc (minion :id))]
+        remove-from-old-loc))))
 
 
 
