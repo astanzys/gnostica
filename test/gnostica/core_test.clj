@@ -32,11 +32,13 @@
           ; then west, should end up at starting square
           (change-direction {:x 2 :y 1} :west)
           (test-move {:x 2 :y 1} {:x 1 :y 1}))))
+
   (testing "moving is illegal when minion is facing upwards"
     (let [empty-board (create-game 3)
           minion {:id "test-minion" :direction :up}
           game (place-minion empty-board {:x 1 :y 1} minion)]
       (is (thrown? ExceptionInfo (move game {:x 1 :y 1} "test-minion")))))
+
   (testing "moving outside the board is illegal"
     (let [empty-board (create-game 3)
           game (-> empty-board
