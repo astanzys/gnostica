@@ -36,4 +36,9 @@
     (let [empty-board (create-game 3)
           minion {:id "test-minion" :direction :up}
           game (place-minion empty-board {:x 1 :y 1} minion)]
-      (is (thrown? ExceptionInfo (move game {:x 1 :y 1} "test-minion"))))))
+      (is (thrown? ExceptionInfo (move game {:x 1 :y 1} "test-minion")))))
+  (testing "moving outside the board is illegal"
+    (let [empty-board (create-game 3)
+          game (-> empty-board
+                   (place-minion {:x 0 :y 1} {:id "west" :direction :west}))]
+      (is (thrown? ExceptionInfo (move game {:x 0 :y 1} "west"))))))
