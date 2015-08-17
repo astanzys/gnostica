@@ -15,6 +15,9 @@
     (is (= (get-in move-result [:board to :minions "test-minion" :id]) "test-minion"))
     move-result))
 
+(defn- minion-not-present? [game loc id]
+  (nil? (get-in game [:board loc id])))
+
 (deftest movement-test
   (testing "moving around in a square"
     (let [empty-board (create-game 3)
@@ -44,3 +47,15 @@
           game (-> empty-board
                    (place-minion {:x 0 :y 1} {:id "west" :direction :west}))]
       (is (thrown? ExceptionInfo (move game {:x 0 :y 1} "west"))))))
+
+(deftest shrink-test
+  (testing "shrinking stuff"
+    (let [empty-board (create-game 3)
+          first-minion {:id "first-minion" :direction :east}
+          second-minion {:id "second-minion" :direction :west}
+          game (-> empty-board
+                   (place-minion {:x 0 :y 0} first-minion)
+                   (place-minion {:x 1 :y 0} second-minion))]
+      (is (minion-not-present?
+            (shrink game {:x 0 :y 0} "first-minion" {:x 1 :y 0} "second-minion")
+            {:x 1 :y 0} "second-minion")))))
