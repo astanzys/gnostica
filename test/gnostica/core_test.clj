@@ -74,4 +74,23 @@
                    (place-minion {:x 1 :y 0} second-minion))]
       (is (minion-not-present?
             (shrink game {:x 0 :y 0} "first-minion" {:x 1 :y 0} "second-minion")
-            {:x 1 :y 0} "second-minion")))))
+            {:x 1 :y 0} "second-minion"))))
+  (testing "using shrink with enemy minion as a source is illegal"
+    (let [empty-board (create-game 3 ["p1", "p2"])
+          game (-> empty-board
+                   (place-minion {:x 0 :y 0} {:id "own-minion" :direction :east :owner "p1"})
+                   (place-minion {:x 1 :y 0} {:id "enemy-minion" :direction :west :owner "p2"})
+                   )]
+      (is (thrown? ExceptionInfo (shrink game {:x 1 :y 0} "enemy-minion" {:x 0 :y 0} "own-minion")))))
+  (testing "after shrink player is changed"
+    (let [empty-board (create-game 3 ["p1" "p2"])
+          game (-> empty-board
+                   (place-minion {:x 0 :y 0} {:id "p11-minion" :direction :east :owner "p1"})
+                   (place-minion {:x 1 :y 0} {:id "p21-minion" :direction :east :owner "p2"})
+                   (place-minion {:x 0 :y 1} {:id "p22-minion" :direction :west :owner "p2"})
+                   (place-minion {:x 1 :y 1} {:id "p12-minion" :direction :west :owner "p1"})
+                   )
+          after-first-move (shrink game {:x 0 :y 0} "p11-minion" {:x 1 :y 0} "p21-minion")
+          after-second-move (shrink after-first-move {:x 0 :y 1} "p22-minion" {:x 1 :y 1} "p12-minion")]
+      (is (= (:current-player after-first-move) "p2"))
+      (is (= (:current-player after-second-move) "p1")))))

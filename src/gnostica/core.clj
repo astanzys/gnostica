@@ -59,7 +59,7 @@
         (fn [game from to minion]
           (cond
             (not= (:owner minion) (:current-player game))
-            (throw (ex-info "moving enemy minions is illegal" {:source source-id}))
+            (throw (ex-info "using enemy minion as a source is illegal" {:source source-id}))
             (= (minion :direction) :up)
             (throw (ex-info "movement when minion is facing up is illegal" {:from from :target source-id}))
             (not (contains? (game :board) to))
@@ -72,8 +72,15 @@
 (defn shrink [game from source-id to target-id]
   (let [source-minion (get-in game [:board from :minions source-id])
         to (calculate-target-loc from source-minion)
-        target-minion (get-in game [:board to :minions target-id])]
-    (update-in game [:board to :minions] dissoc target-id)))
+        target-minion (get-in game [:board to :minions target-id])
+        verify-validitiy
+        (fn [game from source-id to target-id]
+          (cond
+            (not= (:owner source-minion) (:current-player game))
+            (throw (ex-info "using enemy minion as a source is illegal" {:source source-id}))))]
+    (verify-validitiy game from source-id to target-id)
+    (end-turn
+      (update-in game [:board to :minions] dissoc target-id))))
 
 
 
