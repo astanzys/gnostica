@@ -20,8 +20,8 @@
 
 (deftest movement-test
   (testing "moving around in a square"
-    (let [empty-board (create-game 3)
-          minion {:id "test-minion" :direction :north}
+    (let [empty-board (create-game 3 ["p1"])
+          minion {:id "test-minion" :direction :north :owner "p1"}
           game (place-minion empty-board {:x 1 :y 1} minion)]
       (-> game
           ; go north
@@ -37,22 +37,38 @@
           (test-move {:x 2 :y 1} {:x 1 :y 1}))))
 
   (testing "moving is illegal when minion is facing upwards"
-    (let [empty-board (create-game 3)
-          minion {:id "test-minion" :direction :up}
+    (let [empty-board (create-game 3 ["p1"])
+          minion {:id "test-minion" :direction :up :owner "p1"}
           game (place-minion empty-board {:x 1 :y 1} minion)]
       (is (thrown? ExceptionInfo (move game {:x 1 :y 1} "test-minion")))))
 
   (testing "moving outside the board is illegal"
-    (let [empty-board (create-game 3)
+    (let [empty-board (create-game 3 ["p1"])
           game (-> empty-board
-                   (place-minion {:x 0 :y 1} {:id "west" :direction :west}))]
-      (is (thrown? ExceptionInfo (move game {:x 0 :y 1} "west"))))))
+                   (place-minion {:x 0 :y 1} {:id "west" :direction :west :owner "p1"}))]
+      (is (thrown? ExceptionInfo (move game {:x 0 :y 1} "west")))))
+  (testing "moving enemy minions is illegal"
+    (let [empty-board (create-game 3 ["p1", "p2"])
+          game (-> empty-board
+                   (place-minion {:x 0 :y 1} {:id "enemy-minion" :direction :east :owner "p2"}))]
+      (is (thrown? ExceptionInfo (move game {:x 0 :y 1} "enemy-minion")))))
+  (testing "after move player is changed"
+    (let [empty-board (create-game 3 ["p1" "p2"])
+          first-minion {:id "p1-minion" :direction :east :owner "p1"}
+          second-minion {:id "p2-minion" :direction :west :owner "p2"}
+          game (-> empty-board
+                   (place-minion {:x 0 :y 0} first-minion)
+                   (place-minion {:x 1 :y 0} second-minion))
+          after-first-move (move game {:x 0 :y 0} "p1-minion")
+          after-second-move (move after-first-move {:x 1 :y 0} "p2-minion")]
+      (is (= (:current-player after-first-move) "p2"))
+      (is (= (:current-player after-second-move) "p1")))))
 
 (deftest shrink-test
   (testing "shrinking stuff"
-    (let [empty-board (create-game 3)
-          first-minion {:id "first-minion" :direction :east}
-          second-minion {:id "second-minion" :direction :west}
+    (let [empty-board (create-game 3 ["p1"])
+          first-minion {:id "first-minion" :direction :east :owner "p1"}
+          second-minion {:id "second-minion" :direction :west :owner "p1"}
           game (-> empty-board
                    (place-minion {:x 0 :y 0} first-minion)
                    (place-minion {:x 1 :y 0} second-minion))]
