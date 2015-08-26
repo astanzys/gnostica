@@ -31,6 +31,11 @@
 
 (def id-generator (atom 0))                                 ;temp, its a bit silly because you have to increment manually
 
+(defn- get-next-minion-id []
+  (let [ret-val @id-generator]
+    (swap! id-generator inc)
+    ret-val))
+
 (defn- create-board [size]
   (let [coords (for [x (range size)
                      y (range size)]
@@ -90,7 +95,7 @@
 (defn create [game from source-id new-minion-orientation]
   (let [source-minion (get-in game [:board from :minions source-id])
         to (calculate-target-loc from source-minion)
-        new-minion-id @id-generator
+        new-minion-id (get-next-minion-id)
         verify-validity
         (fn [game]
           (verify-is-using-own-minion game source-minion)
@@ -104,7 +109,6 @@
                                         :orientation new-minion-orientation
                                         :owner (:owner source-minion)})]
     (verify-validity game)
-    (swap! id-generator inc)
     [(end-turn create) new-minion-id]))
 
 
