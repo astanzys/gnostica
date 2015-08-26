@@ -18,6 +18,23 @@
 (defn- minion-not-present? [game loc id]
   (nil? (get-in game [:board loc id])))
 
+(defn- apply-fns [initial fns]
+  (if (empty? fns)
+    initial
+    (recur ((first fns) initial) (rest fns))))
+
+(defn- to-place-minion-call [minion-vec]
+  (let [[from minion] minion-vec]
+    (fn [game]
+      (place-minion game from minion))))
+
+(defn- setup-board [players minions]
+  (clojure.pprint/pprint minions)
+  (let [empty-board (create-game 3 players)
+        all-calls (map to-place-minion-call minions)
+        populated (apply-fns empty-board all-calls)]
+    populated))
+
 (deftest movement-test
   (testing "moving around in a square"
     (let [empty-board (create-game 3 ["p1"])
@@ -94,3 +111,25 @@
           after-second-move (shrink after-first-move {:x 0 :y 1} "p22-minion" {:x 1 :y 1} "p12-minion")]
       (is (= (:current-player after-first-move) "p2"))
       (is (= (:current-player after-second-move) "p1")))))
+
+(deftest create-test
+  (testing "create minion"
+    (let [empty-board (create-game 3 ["p1"])
+          game (-> empty-board
+                   (place-minion {:x 0 :y 0} {:id "some-dude" :direction :up :owner "p1"}))
+          [after-create new-minion-id] (create game {:x 0 :y 0} "some-dude" :up)
+          minions-at-0-0 (get-in after-create [:board {:x 0 :y 0} :minions])
+          new-minion (minions-at-0-0 new-minion-id)]
+      (is (= (count minions-at-0-0) 2))
+      (is (= (:owner new-minion) "p1"))))
+  (testing "cannot create using other player minions as a source"
+    (let [empty-board (create-game 3 ["p1"])
+          game (-> empty-board
+                   (place-minion {:x 0 :y 0} {:id "some-dude" :direction :up :owner "p5"}))]
+      (is (thrown? ExceptionInfo (create game {:x 0 :y 0} "some-dude" :up)))))
+  (testing "create respects 3 minions per tile rule"
+    (let [game (setup-board ["p1"]
+                            [[{:x 0 :y 0} {:id "1" :direction :up :owner "p1"}]
+                             [{:x 0 :y 0} {:id "2" :direction :up :owner "p1"}]
+                             [{:x 0 :y 0} {:id "3" :direction :up :owner "p1"}]])]
+      (is (thrown? ExceptionInfo (create game {:x 0 :y 0} "1" :up))))))
