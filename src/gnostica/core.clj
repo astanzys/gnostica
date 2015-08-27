@@ -18,7 +18,7 @@
  :next-players ["p3" "p1" "p2"] ; repeats
  :board
  {{:y 0, :x 0}
-               {:minions {"some-dude" {:id "some-dude", :direction :up :owner "p1"}}},
+               {:minions {"some-dude" {:id "some-dude", :direction :up :owner "p1" :size 1}}},
   {:y 1, :x 0}
                {:minions {}}}}
 
@@ -113,6 +113,7 @@
                    assoc new-minion-id {
                                         :id new-minion-id
                                         :orientation new-minion-orientation
-                                        :owner (:owner source-minion)})]
+                                        :owner (:owner source-minion)
+                                        :size 1})]
     (verify-validity game)
     [(end-turn create) new-minion-id]))
