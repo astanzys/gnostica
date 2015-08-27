@@ -36,6 +36,15 @@
     (swap! id-generator inc)
     ret-val))
 
+(defn- find-minions-per-player [game]
+  (->> game
+       :board
+       vals
+       (map :minions)
+       (apply merge)
+       vals
+       (group-by :owner)))
+
 (defn- create-board [size]
   (let [coords (for [x (range size)
                      y (range size)]
@@ -63,9 +72,15 @@
   (when (not= (:owner minion) (:current-player game))
     (throw (ex-info "using enemy minion as a source is illegal" {:minion minion}))))
 
-(defn- verify-not-over-minion-limit [game to]
+(defn- verify-not-over-minion-limit-in-loc [game to]
   (when (> (count (get-in game [:board to :minions])) 2)
     (throw (ex-info "max 3 minions per square" {:game game :to to}))))
+
+(defn- verify-not-over-global-minion-limit [game]
+  (let [minions-per-player (find-minions-per-player game)
+        minion-count (count (get minions-per-player (:current-player game)))]
+    (when (> minion-count 4)
+      (throw (ex-info ("cannot create additional minion") {:game game})))))
 
 (defn- verify-loc-is-on-board [game loc]
   (when (not (contains? (game :board) loc))
@@ -78,7 +93,7 @@
         (fn [game from to minion]
           (verify-is-using-own-minion game minion)
           (verify-loc-is-on-board game to)
-          (verify-not-over-minion-limit game to)
+          (verify-not-over-minion-limit-in-loc game to)
           (cond
             (= (minion :direction) :up)
             (throw (ex-info "movement when minion is facing up is illegal" {:from from :target source-id})))
@@ -106,7 +121,8 @@
         verify-validity
         (fn [game]
           (verify-is-using-own-minion game source-minion)
-          (verify-not-over-minion-limit game to))
+          (verify-not-over-minion-limit-in-loc game to)
+          (verify-not-over-global-minion-limit game))
         create
         (update-in game
                    [:board to :minions]

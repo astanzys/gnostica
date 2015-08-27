@@ -130,9 +130,17 @@
           game (-> empty-board
                    (place-minion {:x 0 :y 0} {:id "some-dude" :direction :up :owner "p5" :size 1}))]
       (is (thrown? ExceptionInfo (create game {:x 0 :y 0} "some-dude" :up)))))
-  (testing "create respects 3 minions per tile rule"
+  (testing "3 minions per tile rule"
     (let [game (setup-board ["p1"]
                             [[{:x 0 :y 0} {:id "1" :direction :up :owner "p1" :size 1}]
                              [{:x 0 :y 0} {:id "2" :direction :up :owner "p1" :size 1}]
                              [{:x 0 :y 0} {:id "3" :direction :up :owner "p1" :size 1}]])]
-      (is (thrown? ExceptionInfo (create game {:x 0 :y 0} "1" :up))))))
+      (is (thrown? ExceptionInfo (create game {:x 0 :y 0} "1" :up)))))
+  (testing "5 minions of same size per player rule"
+    (let [game (setup-board ["p1"]
+                            [[{:x 0 :y 0} {:id "1" :direction :up :owner "p1" :size 1}]
+                             [{:x 0 :y 0} {:id "2" :direction :up :owner "p1" :size 1}]
+                             [{:x 0 :y 0} {:id "3" :direction :up :owner "p1" :size 1}]
+                             [{:x 1 :y 0} {:id "4" :direction :up :owner "p1" :size 1}]
+                             [{:x 1 :y 0} {:id "5" :direction :up :owner "p1" :size 1}]])]
+      (is (thrown? ExceptionInfo (create game {:x 1 :y 0} "5" :up))))))
