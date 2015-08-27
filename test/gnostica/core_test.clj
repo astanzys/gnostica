@@ -86,33 +86,40 @@
 
 (deftest shrink-test
   (testing "shrinking stuff"
-    (let [empty-board (create-game 3 ["p1"])
-          first-minion {:id "first-minion" :direction :east :owner "p1" :size 1}
-          second-minion {:id "second-minion" :direction :west :owner "p1" :size 1}
-          game (-> empty-board
-                   (place-minion {:x 0 :y 0} first-minion)
-                   (place-minion {:x 1 :y 0} second-minion))]
+    (let [game (setup-board ["p1"]
+                            [
+                             [{:x 0 :y 0} {:id "size-1" :direction :east :owner "p1" :size 1}]
+                             [{:x 1 :y 0} {:id "target-1" :direction :west :owner "p1" :size 1}]
+                             [{:x 0 :y 0} {:id "size-2" :direction :east :owner "p1" :size 2}]
+                             [{:x 1 :y 0} {:id "target-2" :direction :west :owner "p1" :size 3}]
+                             ])]
       (is (minion-not-present?
-            (shrink game {:x 0 :y 0} "first-minion" {:x 1 :y 0} "second-minion")
-            {:x 1 :y 0} "second-minion"))))
+            (shrink game {:x 0 :y 0} "size-1" {:x 1 :y 0} "target-1" 1)
+            {:x 1 :y 0} "target-1"))
+      (is (=
+            1
+            (get-in
+              (shrink game {:x 0 :y 0} "size-2" {:x 1 :y 0} "target-2" 2)
+              [:board {:x 1 :y 0} :minions "target-2" :size])))))
   (testing "using shrink with enemy minion as a source is illegal"
     (let [empty-board (create-game 3 ["p1", "p2"])
           game (-> empty-board
                    (place-minion {:x 0 :y 0} {:id "own-minion" :direction :east :owner "p1" :size 1})
                    (place-minion {:x 1 :y 0} {:id "enemy-minion" :direction :west :owner "p2" :size 1})
                    )]
-      (is (thrown? ExceptionInfo (shrink game {:x 1 :y 0} "enemy-minion" {:x 0 :y 0} "own-minion")))))
+      (is (thrown? ExceptionInfo (shrink game {:x 1 :y 0} "enemy-minion" {:x 0 :y 0} "own-minion" 1)))))
   (testing "after shrink player is changed"
     (let [empty-board (create-game 3 ["p1" "p2"])
           game (-> empty-board
                    (place-minion {:x 0 :y 0} {:id "p11-minion" :direction :east :owner "p1" :size 1})
                    (place-minion {:x 1 :y 0} {:id "p21-minion" :direction :east :owner "p2" :size 1})
-                   (place-minion {:x 0 :y 1} {:id "p22-minion" :direction :west :owner "p2" :size 1})
+                   (place-minion {:x 0 :y 1} {:id "p22-minion" :direction :east :owner "p2" :size 1})
                    (place-minion {:x 1 :y 1} {:id "p12-minion" :direction :west :owner "p1" :size 1}))
-          after-first-move (shrink game {:x 0 :y 0} "p11-minion" {:x 1 :y 0} "p21-minion")
-          after-second-move (shrink after-first-move {:x 0 :y 1} "p22-minion" {:x 1 :y 1} "p12-minion")]
+          after-first-move (shrink game {:x 0 :y 0} "p11-minion" {:x 1 :y 0} "p21-minion" 1)
+          after-second-move (shrink after-first-move {:x 0 :y 1} "p22-minion" {:x 1 :y 1} "p12-minion" 1)]
       (is (= (:current-player after-first-move) "p2"))
-      (is (= (:current-player after-second-move) "p1")))))
+      (is (= (:current-player after-second-move) "p1"))))
+  (testing "shrinking is not possible if afterwards player would have more than 5 minions of same size"))
 
 (deftest create-test
   (testing "create minion"

@@ -5,8 +5,8 @@
 ; TODO move other pieces,
 ; TODO shrink tiles,
 ; TODO reorientation as a move, reorientation after using a minion
-; TODO minion sizes
-; TODO players, move cycle
+; TODO minion sizes - create, grow, shrink
+; TODO initial board setup
 ; TODO deck, cards, board layout, board changes
 ; TODO victory conditions and handling
 ; TODO player elimination rules
@@ -72,15 +72,16 @@
   (when (not= (:owner minion) (:current-player game))
     (throw (ex-info "using enemy minion as a source is illegal" {:minion minion}))))
 
-(defn- verify-not-over-minion-limit-in-loc [game to]
+(defn- verify-adding-minion-to-loc [game to]
   (when (> (count (get-in game [:board to :minions])) 2)
     (throw (ex-info "max 3 minions per square" {:game game :to to}))))
 
-(defn- verify-not-over-global-minion-limit [game]
+(defn- verify-adding-new-minion [game player size]
   (let [minions-per-player (find-minions-per-player game)
-        minion-count (count (get minions-per-player (:current-player game)))]
-    (when (> minion-count 4)
-      (throw (ex-info ("cannot create additional minion") {:game game})))))
+        players-minions (get minions-per-player player)
+        minions-of-size (filter #(= size (:size %)) players-minions)]
+    (when (> (count minions-of-size) 4)
+      (throw (ex-info "cannot create additional minion" {:game game})))))
 
 (defn- verify-loc-is-on-board [game loc]
   (when (not (contains? (game :board) loc))
@@ -93,7 +94,7 @@
         (fn [game from to minion]
           (verify-is-using-own-minion game minion)
           (verify-loc-is-on-board game to)
-          (verify-not-over-minion-limit-in-loc game to)
+          (verify-adding-minion-to-loc game to)
           (cond
             (= (minion :direction) :up)
             (throw (ex-info "movement when minion is facing up is illegal" {:from from :target source-id})))
@@ -103,16 +104,26 @@
           remove-from-old-loc (update-in copy-to-new-loc [:board from :minions] dissoc (source-minion :id))]
       (end-turn remove-from-old-loc))))
 
-(defn shrink [game from source-id to target-id]
+(defn shrink [game from source-id to target-id by]
   (let [source-minion (get-in game [:board from :minions source-id])
         to (calculate-target-loc from source-minion)
         target-minion (get-in game [:board to :minions target-id])
+        new-target-minion-size (- (:size target-minion) by)
         verify-validitiy
-        (fn [game from source-id to target-id]
-          (verify-is-using-own-minion game source-minion))]
-    (verify-validitiy game from source-id to target-id)
-    (end-turn
-      (update-in game [:board to :minions] dissoc target-id))))
+        (fn []
+          (verify-is-using-own-minion game source-minion)
+          (when (> by (:size source-minion))
+            (throw (ex-info "cannot shrink by more than the size of source" {:game game :source source-minion})))
+          (when (pos? new-target-minion-size)
+            (verify-adding-new-minion game (:owner target-minion) new-target-minion-size)))
+
+        shrink-minion
+        (fn []
+          (if (pos? new-target-minion-size)
+            (assoc-in game [:board to :minions target-id :size] new-target-minion-size)
+            (update-in game [:board to :minions] dissoc target-id)))]
+    (verify-validitiy)
+    (end-turn (shrink-minion))))
 
 (defn create [game from source-id new-minion-orientation]
   (let [source-minion (get-in game [:board from :minions source-id])
@@ -121,8 +132,8 @@
         verify-validity
         (fn [game]
           (verify-is-using-own-minion game source-minion)
-          (verify-not-over-minion-limit-in-loc game to)
-          (verify-not-over-global-minion-limit game))
+          (verify-adding-minion-to-loc game to)
+          (verify-adding-new-minion game (:current-player game) 1))
         create
         (update-in game
                    [:board to :minions]
