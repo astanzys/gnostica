@@ -23,16 +23,14 @@
     initial
     (recur ((first fns) initial) (rest fns))))
 
-(defn- to-place-minion-call [minion-vec]
-  (let [[from minion] minion-vec]
+(defn- to-place-minion-call [minion-data]
+  (let [[from minion] minion-data]
     (fn [game]
       (place-minion game from minion))))
 
 (defn- setup-board [players minions]
-  (clojure.pprint/pprint minions)
   (let [empty-board (create-game 3 players)
-        all-calls (map to-place-minion-call minions)
-        populated (apply-fns empty-board all-calls)]
+        populated (apply-fns empty-board (map to-place-minion-call minions))]
     populated))
 
 (deftest movement-test
@@ -71,15 +69,20 @@
       (is (thrown? ExceptionInfo (move game {:x 0 :y 1} "enemy-minion")))))
   (testing "after move player is changed"
     (let [empty-board (create-game 3 ["p1" "p2"])
-          first-minion {:id "p1-minion" :direction :east :owner "p1"}
-          second-minion {:id "p2-minion" :direction :west :owner "p2"}
           game (-> empty-board
-                   (place-minion {:x 0 :y 0} first-minion)
-                   (place-minion {:x 1 :y 0} second-minion))
+                   (place-minion {:x 0 :y 0} {:id "p1-minion" :direction :east :owner "p1"})
+                   (place-minion {:x 1 :y 0} {:id "p2-minion" :direction :west :owner "p2"}))
           after-first-move (move game {:x 0 :y 0} "p1-minion")
           after-second-move (move after-first-move {:x 1 :y 0} "p2-minion")]
       (is (= (:current-player after-first-move) "p2"))
-      (is (= (:current-player after-second-move) "p1")))))
+      (is (= (:current-player after-second-move) "p1"))))
+  (testing "move respects 3 minions per square rule"
+    (let [game (setup-board ["p1"]
+                            [[{:x 0 :y 0} {:id "1" :direction :up :owner "p1"}]
+                             [{:x 0 :y 0} {:id "2" :direction :up :owner "p1"}]
+                             [{:x 0 :y 0} {:id "3" :direction :up :owner "p1"}]
+                             [{:x 1 :y 0} {:id "4" :direction :west :owner "p1"}]])]
+      (is (thrown? ExceptionInfo (move game {:x 1 :y 0} "4"))))))
 
 (deftest shrink-test
   (testing "shrinking stuff"
@@ -105,8 +108,7 @@
                    (place-minion {:x 0 :y 0} {:id "p11-minion" :direction :east :owner "p1"})
                    (place-minion {:x 1 :y 0} {:id "p21-minion" :direction :east :owner "p2"})
                    (place-minion {:x 0 :y 1} {:id "p22-minion" :direction :west :owner "p2"})
-                   (place-minion {:x 1 :y 1} {:id "p12-minion" :direction :west :owner "p1"})
-                   )
+                   (place-minion {:x 1 :y 1} {:id "p12-minion" :direction :west :owner "p1"}))
           after-first-move (shrink game {:x 0 :y 0} "p11-minion" {:x 1 :y 0} "p21-minion")
           after-second-move (shrink after-first-move {:x 0 :y 1} "p22-minion" {:x 1 :y 1} "p12-minion")]
       (is (= (:current-player after-first-move) "p2"))

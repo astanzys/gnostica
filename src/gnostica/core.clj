@@ -1,7 +1,7 @@
 (ns gnostica.core)
 
-; TODO create pieces, create tiles
 ; TODO grow pieces, grow land,
+; TODO create tiles
 ; TODO move other pieces,
 ; TODO shrink tiles,
 ; TODO reorientation as a move, reorientation after using a minion
@@ -29,7 +29,7 @@
    :south {:x 0 :y -1}
    :up    {:x 0 :y 0}})
 
-(def id-generator (atom 0))                                 ;temp, its a bit silly because you have to increment manually
+(def id-generator (atom 0))
 
 (defn- get-next-minion-id []
   (let [ret-val @id-generator]
@@ -63,17 +63,26 @@
   (when (not= (:owner minion) (:current-player game))
     (throw (ex-info "using enemy minion as a source is illegal" {:minion minion}))))
 
+(defn- verify-not-over-minion-limit [game to]
+  (when (> (count (get-in game [:board to :minions])) 2)
+    (throw (ex-info "max 3 minions per square" {:game game :to to}))))
+
+(defn- verify-loc-is-on-board [game loc]
+  (when (not (contains? (game :board) loc))
+    (throw (ex-info (str loc " is not on board") {:game game :loc loc}))))
+
 (defn move [game from source-id]
   (let [source-minion (get-in game [:board from :minions source-id])
         to (calculate-target-loc from source-minion)
         verify-validity
         (fn [game from to minion]
           (verify-is-using-own-minion game minion)
+          (verify-loc-is-on-board game to)
+          (verify-not-over-minion-limit game to)
           (cond
             (= (minion :direction) :up)
-            (throw (ex-info "movement when minion is facing up is illegal" {:from from :target source-id}))
-            (not (contains? (game :board) to))
-            (throw (ex-info (str to " is not on board") {:target source-id :from from :to to}))))]
+            (throw (ex-info "movement when minion is facing up is illegal" {:from from :target source-id})))
+          )]
     (verify-validity game from to source-minion)
     (let [copy-to-new-loc (assoc-in game [:board to :minions (source-minion :id)] source-minion)
           remove-from-old-loc (update-in copy-to-new-loc [:board from :minions] dissoc (source-minion :id))]
@@ -85,9 +94,7 @@
         target-minion (get-in game [:board to :minions target-id])
         verify-validitiy
         (fn [game from source-id to target-id]
-          (cond
-            (not= (:owner source-minion) (:current-player game))
-            (throw (ex-info "using enemy minion as a source is illegal" {:source source-id}))))]
+          (verify-is-using-own-minion game source-minion))]
     (verify-validitiy game from source-id to target-id)
     (end-turn
       (update-in game [:board to :minions] dissoc target-id))))
@@ -99,8 +106,7 @@
         verify-validity
         (fn [game]
           (verify-is-using-own-minion game source-minion)
-          (when (> (count (get-in game [:board from :minions])) 2)
-            (throw (ex-info "max 3 minions per square" {:source source-id}))))
+          (verify-not-over-minion-limit game to))
         create
         (update-in game
                    [:board to :minions]
@@ -110,8 +116,3 @@
                                         :owner (:owner source-minion)})]
     (verify-validity game)
     [(end-turn create) new-minion-id]))
-
-
-
-
-
