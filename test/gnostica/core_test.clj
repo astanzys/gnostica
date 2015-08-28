@@ -3,8 +3,12 @@
             [gnostica.core :refer :all])
   (:import (clojure.lang ExceptionInfo)))
 
-(defn- place-minion [game loc minion]
-  (assoc-in game [:board loc :minions (minion :id)] minion))
+(defn- place-minion
+  ([game loc minion]
+   (assoc-in game [:board loc :minions (minion :id)] minion))
+  ([game minion-data]
+   (let [[loc minion] minion-data]
+     (assoc-in game [:board loc :minions (minion :id)] minion))))
 
 (defn- change-direction [game loc new-direction]
   (assoc-in game [:board loc :minions "test-minion" :direction] new-direction))
@@ -18,19 +22,10 @@
 (defn- minion-not-present? [game loc id]
   (nil? (get-in game [:board loc id])))
 
-(defn- apply-fns [initial fns]
-  (if (empty? fns)
-    initial
-    (recur ((first fns) initial) (rest fns))))
-
-(defn- to-place-minion-call [minion-data]
-  (let [[from minion] minion-data]
-    (fn [game]
-      (place-minion game from minion))))
 
 (defn- setup-board [players minions]
   (let [empty-board (create-game 3 players)
-        populated (apply-fns empty-board (map to-place-minion-call minions))]
+        populated (reduce place-minion empty-board minions)]
     populated))
 
 (deftest movement-test

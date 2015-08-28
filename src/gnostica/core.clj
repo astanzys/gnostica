@@ -5,7 +5,7 @@
 ; TODO move other pieces,
 ; TODO shrink tiles,
 ; TODO reorientation as a move, reorientation after using a minion
-; TODO minion sizes - create, grow, shrink
+; TODO minion sizes - grow
 ; TODO initial board setup
 ; TODO deck, cards, board layout, board changes
 ; TODO victory conditions and handling
