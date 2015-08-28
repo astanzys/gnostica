@@ -146,3 +146,12 @@
                              [{:x 1 :y 0} {:id "4" :direction :up :owner "p1" :size 1}]
                              [{:x 1 :y 0} {:id "5" :direction :up :owner "p1" :size 1}]])]
       (is (thrown? ExceptionInfo (create game {:x 1 :y 0} "5" :up))))))
+
+(deftest grow-test
+  (testing "grow minion"
+    (let [game (setup-board ["p1"]
+                            [[{:x 0 :y 0} {:id "1" :direction :up :owner "p1" :size 1}]
+                             [{:x 0 :y 0} {:id "3" :direction :up :owner "p1" :size 3}]])
+          after-grow (grow game {:x 0 :y 0} "1" "1")]
+      (is (= 2 (get-in after-grow [:board {:x 0 :y 0} :minions "1" :size])))
+      (is (thrown? ExceptionInfo (grow game {:x 0 :y 0} "3" "3"))))))

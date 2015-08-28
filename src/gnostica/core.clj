@@ -144,3 +144,22 @@
                                         :size 1})]
     (verify-validity game)
     [(end-turn create) new-minion-id]))
+
+(defn grow [game from source-id target-id]
+  (let [source-minion (get-in game [:board from :minions source-id])
+        to (calculate-target-loc from source-minion)
+        target-minion (get-in game [:board to :minions target-id])
+        new-target-minion-size (inc (:size target-minion))
+
+        verify-validity
+        (fn []
+          (verify-is-using-own-minion game source-minion)
+          (verify-adding-new-minion game (:owner target-minion) new-target-minion-size)
+          (when (> new-target-minion-size 3)
+            (throw (ex-info "cannot grow past size 3" {:game game :source source-minion :target target-minion}))))
+
+        grow
+        (fn []
+          (assoc-in game [:board to :minions target-id :size] new-target-minion-size))]
+    (verify-validity)
+    (end-turn (grow))))
