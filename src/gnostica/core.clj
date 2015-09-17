@@ -1,8 +1,9 @@
-(ns gnostica.core)
+(ns gnostica.core
+  (:use [clojure.algo.generic.functor :only (fmap)]))
 
-; TODO grow pieces, grow land,
+; TODO grow land,
 ; TODO create tiles
-; TODO move other pieces,
+; TODO move other pieces, move more than one square
 ; TODO shrink tiles,
 ; TODO reorientation as a move, reorientation after using a minion
 ; TODO minion sizes - grow
@@ -51,9 +52,9 @@
                  {:x x :y y})]
     (zipmap coords (repeat {:minions {}}))))
 
-(defn- calculate-target-loc [loc minion]
+(defn- calculate-target-loc [loc minion distance]
   (let [{minion-direction :direction} minion
-        minion-vector (direction-vectors minion-direction)
+        minion-vector (fmap (partial * distance) (minion-direction direction-vectors))
         target-loc {:x (+ (loc :x) (minion-vector :x)) :y (+ (loc :y) (minion-vector :y))}]
     target-loc))
 
@@ -72,6 +73,11 @@
   (when (not= (:owner minion) (:current-player game))
     (throw (ex-info "using enemy minion as a source is illegal" {:minion minion}))))
 
+(defn- verify-minion-power-limit [game minion target-amount]
+  (when (> target-amount (:size minion))
+    (throw (ex-info "cannot move or shrink by more than the size of source"
+                    {:game game :source minion :target-amount target-amount}))))
+
 (defn- verify-adding-minion-to-loc [game to]
   (when (> (count (get-in game [:board to :minions])) 2)
     (throw (ex-info "max 3 minions per square" {:game game :to to}))))
@@ -87,14 +93,15 @@
   (when (not (contains? (game :board) loc))
     (throw (ex-info (str loc " is not on board") {:game game :loc loc}))))
 
-(defn move [game from source-id]
+(defn move [game from source-id distance]
   (let [source-minion (get-in game [:board from :minions source-id])
-        to (calculate-target-loc from source-minion)
+        to (calculate-target-loc from source-minion distance)
         verify-validity
         (fn [game from to minion]
           (verify-is-using-own-minion game minion)
           (verify-loc-is-on-board game to)
           (verify-adding-minion-to-loc game to)
+          (verify-minion-power-limit game source-minion distance)
           (cond
             (= (minion :direction) :up)
             (throw (ex-info "movement when minion is facing up is illegal" {:from from :target source-id})))
@@ -106,14 +113,13 @@
 
 (defn shrink [game from source-id to target-id by]
   (let [source-minion (get-in game [:board from :minions source-id])
-        to (calculate-target-loc from source-minion)
+        to (calculate-target-loc from source-minion 1)
         target-minion (get-in game [:board to :minions target-id])
         new-target-minion-size (- (:size target-minion) by)
         verify-validitiy
         (fn []
           (verify-is-using-own-minion game source-minion)
-          (when (> by (:size source-minion))
-            (throw (ex-info "cannot shrink by more than the size of source" {:game game :source source-minion})))
+          (verify-minion-power-limit game source-minion by)
           (when (pos? new-target-minion-size)
             (verify-adding-new-minion game (:owner target-minion) new-target-minion-size)))
 
@@ -127,7 +133,7 @@
 
 (defn create [game from source-id new-minion-orientation]
   (let [source-minion (get-in game [:board from :minions source-id])
-        to (calculate-target-loc from source-minion)
+        to (calculate-target-loc from source-minion 1)
         new-minion-id (get-next-minion-id)
         verify-validity
         (fn [game]
@@ -147,7 +153,7 @@
 
 (defn grow [game from source-id target-id]
   (let [source-minion (get-in game [:board from :minions source-id])
-        to (calculate-target-loc from source-minion)
+        to (calculate-target-loc from source-minion 1)
         target-minion (get-in game [:board to :minions target-id])
         new-target-minion-size (inc (:size target-minion))
 

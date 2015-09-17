@@ -14,17 +14,20 @@
   (assoc-in game [:board loc :minions "test-minion" :direction] new-direction))
 
 (defn- test-move [game from to]
-  (let [move-result (move game from "test-minion")]
+  (let [move-result (move game from "test-minion" 1)]
     (is (= (get-in move-result [:board from :minions "test-minion" :id]) nil))
     (is (= (get-in move-result [:board to :minions "test-minion" :id]) "test-minion"))
     move-result))
 
 (defn- minion-not-present? [game loc id]
-  (nil? (get-in game [:board loc id])))
+  (nil? (get-in game [:board loc :minions id])))
+
+(defn- minion-present? [game loc id]
+  (some? (get-in game [:board loc :minions id])))
 
 
-(defn- setup-board [players minions]
-  (let [empty-board (create-game 3 players)
+(defn- setup-board [size players minions]
+  (let [empty-board (create-game size players)
         populated (reduce place-minion empty-board minions)]
     populated))
 
@@ -50,38 +53,48 @@
     (let [empty-board (create-game 3 ["p1"])
           minion {:id "test-minion" :direction :up :owner "p1"  :size 1}
           game (place-minion empty-board {:x 1 :y 1} minion)]
-      (is (thrown? ExceptionInfo (move game {:x 1 :y 1} "test-minion")))))
+      (is (thrown? ExceptionInfo (move game {:x 1 :y 1} "test-minion" 1)))))
 
   (testing "moving outside the board is illegal"
     (let [empty-board (create-game 3 ["p1"])
           game (-> empty-board
                    (place-minion {:x 0 :y 1} {:id "west" :direction :west :owner "p1" :size 1}))]
-      (is (thrown? ExceptionInfo (move game {:x 0 :y 1} "west")))))
+      (is (thrown? ExceptionInfo (move game {:x 0 :y 1} "west" 1)))))
+
   (testing "moving enemy minions is illegal"
     (let [empty-board (create-game 3 ["p1", "p2"])
           game (-> empty-board
                    (place-minion {:x 0 :y 1} {:id "enemy-minion" :direction :east :owner "p2" :size 1}))]
-      (is (thrown? ExceptionInfo (move game {:x 0 :y 1} "enemy-minion")))))
+      (is (thrown? ExceptionInfo (move game {:x 0 :y 1} "enemy-minion" 1)))))
+
   (testing "after move player is changed"
     (let [empty-board (create-game 3 ["p1" "p2"])
           game (-> empty-board
                    (place-minion {:x 0 :y 0} {:id "p1-minion" :direction :east :owner "p1" :size 1})
                    (place-minion {:x 1 :y 0} {:id "p2-minion" :direction :west :owner "p2" :size 1}))
-          after-first-move (move game {:x 0 :y 0} "p1-minion")
-          after-second-move (move after-first-move {:x 1 :y 0} "p2-minion")]
+          after-first-move (move game {:x 0 :y 0} "p1-minion" 1)
+          after-second-move (move after-first-move {:x 1 :y 0} "p2-minion" 1)]
       (is (= (:current-player after-first-move) "p2"))
       (is (= (:current-player after-second-move) "p1"))))
+
   (testing "move respects 3 minions per square rule"
-    (let [game (setup-board ["p1"]
+    (let [game (setup-board 3 ["p1"]
                             [[{:x 0 :y 0} {:id "1" :direction :up :owner "p1" :size 1}]
                              [{:x 0 :y 0} {:id "2" :direction :up :owner "p1" :size 1}]
                              [{:x 0 :y 0} {:id "3" :direction :up :owner "p1" :size 1}]
                              [{:x 1 :y 0} {:id "4" :direction :west :owner "p1" :size 1}]])]
-      (is (thrown? ExceptionInfo (move game {:x 1 :y 0} "4"))))))
+      (is (thrown? ExceptionInfo (move game {:x 1 :y 0} "4" 1)))))
+
+  (testing "movement range"
+    (let [game (setup-board 5 ["p1"]
+                            [[{:x 0 :y 0} {:id "1" :direction :east :owner "p1" :size 2}]])
+          move-two (move game {:x 0 :y 0} "1" 2)]
+      (is (minion-present? move-two {:x 2 :y 0} "1"))
+      (is (thrown? ExceptionInfo (move game {:x 0 :y 0} "1" 3))))))
 
 (deftest shrink-test
   (testing "shrinking stuff"
-    (let [game (setup-board ["p1"]
+    (let [game (setup-board 3 ["p1"]
                             [
                              [{:x 0 :y 0} {:id "size-1" :direction :east :owner "p1" :size 1}]
                              [{:x 1 :y 0} {:id "target-1" :direction :west :owner "p1" :size 1}]
@@ -133,13 +146,13 @@
                    (place-minion {:x 0 :y 0} {:id "some-dude" :direction :up :owner "p5" :size 1}))]
       (is (thrown? ExceptionInfo (create game {:x 0 :y 0} "some-dude" :up)))))
   (testing "3 minions per tile rule"
-    (let [game (setup-board ["p1"]
+    (let [game (setup-board 3 ["p1"]
                             [[{:x 0 :y 0} {:id "1" :direction :up :owner "p1" :size 1}]
                              [{:x 0 :y 0} {:id "2" :direction :up :owner "p1" :size 1}]
                              [{:x 0 :y 0} {:id "3" :direction :up :owner "p1" :size 1}]])]
       (is (thrown? ExceptionInfo (create game {:x 0 :y 0} "1" :up)))))
   (testing "5 minions of same size per player rule"
-    (let [game (setup-board ["p1"]
+    (let [game (setup-board 3 ["p1"]
                             [[{:x 0 :y 0} {:id "1" :direction :up :owner "p1" :size 1}]
                              [{:x 0 :y 0} {:id "2" :direction :up :owner "p1" :size 1}]
                              [{:x 0 :y 0} {:id "3" :direction :up :owner "p1" :size 1}]
@@ -149,7 +162,7 @@
 
 (deftest grow-test
   (testing "grow minion"
-    (let [game (setup-board ["p1"]
+    (let [game (setup-board 3 ["p1"]
                             [[{:x 0 :y 0} {:id "1" :direction :up :owner "p1" :size 1}]
                              [{:x 0 :y 0} {:id "3" :direction :up :owner "p1" :size 3}]])
           after-grow (grow game {:x 0 :y 0} "1" "1")]
