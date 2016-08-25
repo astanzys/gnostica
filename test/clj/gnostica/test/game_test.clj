@@ -1,6 +1,6 @@
-(ns gnostica.core-test
+(ns gnostica.test.game-test
   (:require [clojure.test :refer :all]
-            [gnostica.core :refer :all])
+            [gnostica.game :refer :all])
   (:import (clojure.lang ExceptionInfo)))
 
 (defn- place-minion

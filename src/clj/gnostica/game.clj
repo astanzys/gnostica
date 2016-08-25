@@ -1,4 +1,4 @@
-(ns gnostica.core
+(ns gnostica.game
   (:use [clojure.algo.generic.functor :only (fmap)]))
 
 ; TODO grow land,
