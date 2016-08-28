@@ -25,7 +25,6 @@
 (defn- minion-present? [game loc id]
   (some? (get-in game [:board loc :minions id])))
 
-
 (defn- setup-board [size players minions]
   (let [empty-board (create-game size players)
         populated (reduce place-minion empty-board minions)]

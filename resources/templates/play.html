@@ -1,15 +1,34 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 
 <div class="game">
-    <textarea class="messages form-control" rows="10" disabled="true">
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed urna urna, varius id faucibus id, varius consectetur mi. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Morbi mauris lacus, vestibulum consectetur convallis ut, condimentum nec neque. Pellentesque non dignissim nulla. Sed tempus ligula fringilla est imperdiet congue. Suspendisse ornare est ac posuere posuere. Donec at purus laoreet, porta nibh in, dictum justo. Pellentesque arcu lorem, mollis a mauris ac, tincidunt congue massa. Quisque tincidunt libero augue, eu suscipit eros dignissim sed. Morbi blandit arcu a vulputate vulputate. Nullam eget hendrerit justo. Aenean ac massa in nisl sollicitudin condimentum. Pellentesque quis feugiat quam. Integer pulvinar at massa a scelerisque.
+    <div id="messages" class="messages form-control" >
+    </div>
 
-Praesent eu ex eu velit aliquet laoreet sit amet sed mauris. Praesent posuere posuere elit, sed consequat libero consequat vitae. Proin ultrices fermentum massa vel tincidunt. Aenean bibendum ante mattis tristique semper. Donec quis sapien id urna dignissim convallis. Sed aliquet consequat dolor pellentesque tristique. Morbi consectetur velit vel diam molestie ultrices. Cras enim leo, tempus sed elit ut, efficitur varius tortor. Integer eleifend ligula et ultricies tempus. Nullam quis enim ut risus vehicula tempus id et nunc. Sed viverra, massa ac sodales porttitor, nisi enim venenatis nibh, eu porta dolor felis vitae metus. Vivamus vitae arcu nec quam consequat ullamcorper ut sit amet erat. Integer placerat neque sit amet eros ultrices dapibus.
-
-Donec posuere venenatis purus et elementum. Vestibulum dui urna, maximus vitae turpis non, mollis blandit dui. Donec eu augue vitae mauris consectetur lobortis quis vel quam. Vestibulum ut eros in mi pulvinar condimentum. Suspendisse molestie in nulla et dapibus. Proin varius congue sollicitudin. Morbi accumsan velit sit amet lacus auctor, pellentesque viverra arcu consectetur. Phasellus semper nisl in lacus facilisis, id iaculis lorem ultrices. Aliquam consectetur libero tincidunt, egestas neque id, blandit justo. Proin dapibus mi vitae metus ullamcorper accumsan. Quisque volutpat varius magna, in eleifend nunc euismod id. Duis condimentum, lacus id tristique feugiat, nulla eros accumsan nisl, non scelerisque arcu elit eget odio. Donec leo sem, gravida quis ante at, consequat varius tortor. Morbi convallis dui eget diam pretium, ultrices molestie odio commodo.
-    </textarea> 
-    <input class="chat-input form-control" type="text" /> 
+    <form onsubmit="sendMessage(); return false;" autocomplete="off">
+        <div class="input-group">
+            <input id="messageInput" class="chat-input form-control" type="text" placeholder="Enter your message here" />
+            <span class="input-group-btn">
+                <button class="btn btn-secondary" type="submit">Send</button>
+            </span>
+        </div>
+    </form>
 </div>
 
+{% endblock %}
+
+{% block page-scripts %}
+{% script "/js/gnostica.js" %}
+
+{% verbatim %}
+<script id="message" type="x-tmpl-mustache" >
+<div>
+    <span class="message">{{ message }}</span>
+</div>
+</script>
+{% endverbatim %}
+
+{% endblock %}
+
+{% block page-styles %}
+{% style "/css/play.css" %}
 {% endblock %}

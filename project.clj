@@ -3,7 +3,9 @@
   :description "FIXME: write description"
   :url "http://example.com/FIXME"
 
-  :dependencies [[org.clojure/clojure "1.8.0"]
+  :dependencies [
+                 ;; luminus libs
+                 [org.clojure/clojure "1.8.0"]
                  [selmer "1.0.7"]
                  [markdown-clj "0.9.89"]
                  [ring-middleware-format "0.7.0"]
@@ -26,7 +28,10 @@
                  [org.xerial/sqlite-jdbc "3.8.11.2"]
                  [org.webjars/webjars-locator-jboss-vfs "0.1.0"]
                  [luminus-immutant "0.2.2"]
-                 [org.clojure/algo.generic "0.1.2"]]
+
+                 ;; gnostica libs
+                 [org.clojure/algo.generic "0.1.2"]
+                 [org.webjars/mustachejs "2.2.1"]]
 
   :min-lein-version "2.0.0"
 

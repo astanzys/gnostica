@@ -30,12 +30,3 @@ body {
     margin-left: 1rem;
   }
 }
-
-.messages.form-control:disabled {
-    cursor: auto;
-}
-
-.messages {
-    margin-bottom: 10px;
-    height: 75vh;
-}
