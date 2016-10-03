@@ -1,32 +1,12 @@
 {% extends "base.html" %} {% block content %}
 
 <div class="game">
-    <div id="messages" class="messages form-control" >
-    </div>
-
-    <form onsubmit="sendMessage(); return false;" autocomplete="off">
-        <div class="input-group">
-            <input id="messageInput" class="chat-input form-control" type="text" placeholder="Enter your message here" />
-            <span class="input-group-btn">
-                <button class="btn btn-secondary" type="submit">Send</button>
-            </span>
-        </div>
-    </form>
 </div>
 
 {% endblock %}
 
 {% block page-scripts %}
-{% script "/js/gnostica.js" %}
-
-{% verbatim %}
-<script id="message" type="x-tmpl-mustache" >
-<div>
-    <span class="message">{{ message }}</span>
-</div>
-</script>
-{% endverbatim %}
-
+{% script "/js/app.js" %}
 {% endblock %}
 
 {% block page-styles %}

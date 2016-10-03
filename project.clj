@@ -6,6 +6,7 @@
   :dependencies [
                  ;; luminus libs
                  [org.clojure/clojure "1.8.0"]
+                 [org.clojure/clojurescript "1.9.229"]
                  [selmer "1.0.7"]
                  [markdown-clj "0.9.89"]
                  [ring-middleware-format "0.7.0"]
@@ -37,17 +38,40 @@
 
   :jvm-opts ["-server" "-Dconf=.lein-env"]
   :source-paths ["src/clj"]
-  :resource-paths ["resources"]
+  :resource-paths ["resources" "target/cljsbuild"]
   :target-path "target/%s/"
   :main gnostica.core
   :migratus {:store :database :db ~(get (System/getenv) "DATABASE_URL")}
 
+  :cljsbuild
+  {:builds
+   {:app
+    {:source-paths ["src/cljs"]
+     :compiler
+     {:main          "gnostica.core"
+      :asset-path    "/js/out"
+      :output-to     "target/cljsbuild/public/js/app.js"
+      :output-dir    "target/cljsbuild/public/js/out"
+      :optimizations :none
+      :source-map    true
+      :pretty-print  true}}
+    :min
+    {:source-paths ["src/cljs"]
+     :compiler
+     {:output-to     "target/cljsbuild/public/js/app.js"
+      :output-dir    "target/uberjar"
+      :externs       ["react/externs/react.js"]
+      :optimizations :advanced
+      :pretty-print  false}}}}
+
   :plugins [[lein-cprop "1.0.1"]
             [migratus-lein "0.4.1"]
-            [lein-immutant "2.1.0"]]
+            [lein-immutant "2.1.0"]
+            [lein-cljsbuild "1.1.3"]]
 
   :profiles
-  {:uberjar {:omit-source true
+  {:uberjar {:prep-tasks ["compile" ["cljsbuild" "once" "min"]]
+             :omit-source true
              :aot :all
              :uberjar-name "gnostica.jar"
              :source-paths ["env/prod/clj"]
